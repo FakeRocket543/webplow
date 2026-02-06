@@ -1,6 +1,6 @@
-# Webplow 配置參考
-# 實際配置請使用環境變數（見 .env.example）
-# Docker Compose 部署時環境變數已在 docker-compose.yml 中設定
+# Webplow config reference
+# Actual config uses environment variables (see .env.example)
+# When deploying with Docker Compose, env vars are set in docker-compose.yml
 
 server:
   listen_addr: "127.0.0.1:9000"   # env: LISTEN_ADDR
@@ -18,4 +18,4 @@ storage:
   max_file_size: 20971520                # env: MAX_FILE_SIZE
 
 logging:
-  log_file: ""                           # env: LOG_FILE（空=不記錄）
+  log_file: ""                           # env: LOG_FILE (empty = no logging)

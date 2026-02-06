@@ -1,58 +1,58 @@
 # Webplow
 
-透過 imgproxy 將上傳圖片轉換為 WebP 格式的 API 服務，支援多用戶 token 管理。
+A WebP image conversion API service powered by imgproxy, with multi-user token management.
 
-## 快速開始（Docker Compose）
+## Quick Start (Docker Compose)
 
 ```bash
 docker compose up -d --build
 
-# 建立第一組 token
+# Create your first token
 docker exec webp_api-webplow-1 webplow-token add "user1"
 
-# 測試
+# Test
 curl -X POST https://webplow.lcn.tw/ \
   -H "X-API-Key: YOUR_TOKEN" \
   -F "file=@image.jpg" \
   -o output.webp
 ```
 
-## Token 管理
+## Token Management
 
 ```bash
-# 新增
+# Add
 docker exec webp_api-webplow-1 webplow-token add "site-name"
 
-# 列出
+# List
 docker exec webp_api-webplow-1 webplow-token list
 
-# 刪除
+# Delete
 docker exec webp_api-webplow-1 webplow-token delete <key>
 
-# 新增/刪除 token 後需重啟載入
+# Restart to reload tokens after add/delete
 docker compose restart webplow
 ```
 
-本地開發時也可用 `make token-add` / `make token-list` / `make token-delete`。
+Use `make token-add` / `make token-list` / `make token-delete` for local development.
 
-## 環境變數
+## Environment Variables
 
-| 變數 | 預設值 | 說明 |
-|------|--------|------|
-| `TOKEN_FILE` | `tokens.json` | Token 存放路徑 |
-| `LISTEN_ADDR` | `127.0.0.1:9000` | 監聽地址 |
-| `IMGPROXY_URL` | `http://127.0.0.1:48080` | imgproxy 後端地址 |
-| `TEMP_DIR` | `/var/www/imgproxy/uploads` | 暫存目錄 |
-| `MAX_FILE_SIZE` | `20971520` | 上傳大小上限（bytes） |
-| `READ_TIMEOUT` | `30s` | 讀取超時 |
-| `WRITE_TIMEOUT` | `60s` | 寫入超時 |
-| `LOG_FILE` | （空，不記錄） | 用量記錄檔路徑 |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TOKEN_FILE` | `tokens.json` | Token file path |
+| `LISTEN_ADDR` | `127.0.0.1:9000` | Listen address |
+| `IMGPROXY_URL` | `http://127.0.0.1:48080` | imgproxy backend URL |
+| `TEMP_DIR` | `/var/www/imgproxy/uploads` | Temp directory |
+| `MAX_FILE_SIZE` | `20971520` | Max upload size (bytes) |
+| `READ_TIMEOUT` | `30s` | Read timeout |
+| `WRITE_TIMEOUT` | `60s` | Write timeout |
+| `LOG_FILE` | (empty, no logging) | Access log file path |
 
-Docker Compose 部署時環境變數已在 `docker-compose.yml` 中設定，不需要 `.env`。
+When deploying with Docker Compose, environment variables are set in `docker-compose.yml`. No `.env` file needed.
 
 ## API
 
-### 圖片轉換
+### Image Conversion
 
 ```bash
 curl -X POST https://webplow.lcn.tw/ \
@@ -61,71 +61,71 @@ curl -X POST https://webplow.lcn.tw/ \
   -o output.webp
 ```
 
-### 批量轉換
+### Batch Conversion
 
-API 為單張設計，批量轉換請在 client 端並行發送：
+The API handles one image per request. For batch conversion, send parallel requests from the client:
 
 ```bash
-# 10 張圖並行轉換
+# 10 images in parallel
 ls *.jpg | xargs -P 10 -I{} \
   curl -s -X POST https://webplow.lcn.tw/ \
     -H "X-API-Key: YOUR_TOKEN" \
     -F "file=@{}" -o "{}.webp"
 ```
 
-Server 端 imgproxy 支援 32 並行處理，不需要額外的批量 API。
+Server-side imgproxy supports 32 concurrent conversions. No batch API needed.
 
-### 健康檢查
+### Health Check
 
 ```bash
 curl https://webplow.lcn.tw/health
 # {"status":"ok"}
 ```
 
-## 用量記錄
+## Access Logging
 
-設定 `LOG_FILE` 後，每筆請求會記錄：
+When `LOG_FILE` is set, each request is logged:
 
 ```json
 {"time":"2026-02-06T04:15:32Z","user":"felix","file":"test.png","in_bytes":70,"status":200,"ms":2}
 ```
 
-查詢範例：
+Query examples:
 
 ```bash
-# 查看 log
+# View log
 docker exec webp_api-webplow-1 cat /data/access.log
 
-# 各用戶統計（需要主機上有 jq）
+# Per-user stats (requires jq on host)
 docker exec webp_api-webplow-1 cat /data/access.log | \
   jq -s 'group_by(.user) | map({user: .[0].user, count: length})'
 ```
 
-## 架構
+## Architecture
 
 ```
-外部 Server → Nginx (443/SSL) → webplow (Go, :9000) → imgproxy (libvips, :8080)
-                                      │                        │
-                                  data volume             uploads volume
-                                  tokens.json             暫存圖片
-                                  access.log
+External Server → Nginx (443/SSL) → webplow (Go, :9000) → imgproxy (libvips, :8080)
+                                          │                        │
+                                      data volume             uploads volume
+                                      tokens.json             temp images
+                                      access.log
 ```
 
-- Nginx：主機原生 systemd，TLS 終止 + 連線緩衝
-- webplow + imgproxy：Docker Compose，`docker compose up -d` 一鍵管理
+- Nginx: host-native systemd, TLS termination + connection buffering
+- webplow + imgproxy: Docker Compose, `docker compose up -d` manages both
 
-## 部署方式
+## Deployment
 
-### Docker Compose（生產環境）
+### Docker Compose (Production)
 
 ```bash
 docker compose up -d --build
-# Token 管理
+# Token management
 docker exec webp_api-webplow-1 webplow-token add "site-name"
 docker compose restart webplow
 ```
 
-### 搭配 Nginx
+### With Nginx
 
 ```nginx
 upstream webplow {
@@ -152,7 +152,7 @@ server {
 }
 ```
 
-### 本地開發
+### Local Development
 
 ```bash
 cp .env.example .env
@@ -160,7 +160,7 @@ make token-add
 make run
 ```
 
-### 主機部署（systemd，備選）
+### Host Deployment (systemd, alternative)
 
 ```bash
 make deploy
@@ -168,37 +168,37 @@ sudo /opt/webplow/webplow-token add "user1"
 sudo systemctl restart webplow
 ```
 
-## Make 指令
+## Make Targets
 
 ```bash
-make build          # 編譯 webplow + webplow-token
-make run            # 本地執行
-make token-add      # 新增 token（互動式）
-make token-list     # 列出所有 token
-make token-delete   # 刪除 token（互動式）
-make health         # 健康檢查
-make deploy         # 主機部署（systemd）
-make docker-up      # Docker 啟動
-make docker-down    # Docker 停止
-make clean          # 清理產出物
+make build          # Build webplow + webplow-token
+make run            # Run locally
+make token-add      # Add token (interactive)
+make token-list     # List all tokens
+make token-delete   # Delete token (interactive)
+make health         # Health check
+make deploy         # Host deploy (systemd)
+make docker-up      # Docker start
+make docker-down    # Docker stop
+make clean          # Clean build artifacts
 ```
 
-## 專案結構
+## Project Structure
 
 ```
 webplow/
 ├── cmd/
-│   ├── server/main.go          # API 服務進入點
-│   └── token/main.go           # Token 管理 CLI
+│   ├── server/main.go          # API server entry point
+│   └── token/main.go           # Token management CLI
 ├── internal/
-│   ├── auth/store.go           # Token 存取（JSON 檔）
-│   ├── config/config.go        # 環境變數配置
+│   ├── auth/store.go           # Token store (JSON file)
+│   ├── config/config.go        # Environment-based config
 │   └── handler/handler.go      # HTTP handler
-├── configs/config.yaml         # 配置參考文件
-├── deployments/webplow.service # systemd 服務（備選）
-├── scripts/deploy.sh           # 主機部署腳本
-├── Dockerfile                  # 容器建置
-├── docker-compose.yml          # 容器編排（生產環境）
-├── .env.example                # 本地開發用環境變數
+├── configs/config.yaml         # Config reference
+├── deployments/webplow.service # systemd service (alternative)
+├── scripts/deploy.sh           # Host deploy script
+├── Dockerfile                  # Container build
+├── docker-compose.yml          # Container orchestration (production)
+├── .env.example                # Local dev environment variables
 └── Makefile
 ```
