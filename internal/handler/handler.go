@@ -98,6 +98,18 @@ func (h *Handler) Convert(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Magic bytes check
+	buf := make([]byte, 512)
+	n, _ := file.Read(buf)
+	mime := http.DetectContentType(buf[:n])
+	switch mime {
+	case "image/jpeg", "image/png", "image/webp", "image/gif":
+	default:
+		writeErr(w, http.StatusBadRequest, "Invalid file type")
+		return
+	}
+	file.Seek(0, io.SeekStart)
+
 	filename := fmt.Sprintf("img_%d_%s", time.Now().UnixNano(), filepath.Base(header.Filename))
 	tempFile := filepath.Join(h.cfg.TempDir, filename)
 
