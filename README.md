@@ -11,7 +11,7 @@ docker compose up -d --build
 docker exec webp_api-webplow-1 webplow-token add "user1"
 
 # Test
-curl -X POST https://webplow.lcn.tw/ \
+curl -X POST https://webplow.example.com/ \
   -H "X-API-Key: YOUR_TOKEN" \
   -F "file=@image.jpg" \
   -o output.webp
@@ -55,7 +55,7 @@ When deploying with Docker Compose, environment variables are set in `docker-com
 ### Image Conversion
 
 ```bash
-curl -X POST https://webplow.lcn.tw/ \
+curl -X POST https://webplow.example.com/ \
   -H "X-API-Key: YOUR_TOKEN" \
   -F "file=@image.jpg" \
   -o output.webp
@@ -68,7 +68,7 @@ The API handles one image per request. For batch conversion, send parallel reque
 ```bash
 # 10 images in parallel
 ls *.jpg | xargs -P 10 -I{} \
-  curl -s -X POST https://webplow.lcn.tw/ \
+  curl -s -X POST https://webplow.example.com/ \
     -H "X-API-Key: YOUR_TOKEN" \
     -F "file=@{}" -o "{}.webp"
 ```
@@ -78,7 +78,7 @@ Server-side imgproxy supports 32 concurrent conversions. No batch API needed.
 ### Health Check
 
 ```bash
-curl https://webplow.lcn.tw/health
+curl https://webplow.example.com/health
 # {"status":"ok"}
 ```
 
@@ -135,10 +135,10 @@ upstream webplow {
 
 server {
     listen 443 ssl http2;
-    server_name webplow.lcn.tw;
+    server_name webplow.example.com;
 
-    ssl_certificate     /etc/letsencrypt/live/webplow.lcn.tw/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/webplow.lcn.tw/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/webplow.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/webplow.example.com/privkey.pem;
 
     client_max_body_size 20m;
 
