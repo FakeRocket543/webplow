@@ -5,8 +5,8 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"imgproxy-api/internal/auth"
-	"imgproxy-api/internal/config"
+	"webplow/internal/auth"
+	"webplow/internal/config"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	switch os.Args[1] {
 	case "add":
 		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "usage: webp-token add <name>")
+			fmt.Fprintln(os.Stderr, "usage: webplow-token add <name>")
 			os.Exit(1)
 		}
 		t, err := store.Add(os.Args[2])
@@ -49,7 +49,7 @@ func main() {
 
 	case "delete":
 		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "usage: webp-token delete <key>")
+			fmt.Fprintln(os.Stderr, "usage: webplow-token delete <key>")
 			os.Exit(1)
 		}
 		if err := store.Delete(os.Args[2]); err != nil {
@@ -64,6 +64,6 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: webp-token <add|list|delete> [args]")
+	fmt.Fprintln(os.Stderr, "usage: webplow-token <add|list|delete> [args]")
 	os.Exit(1)
 }

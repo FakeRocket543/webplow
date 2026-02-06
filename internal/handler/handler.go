@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"imgproxy-api/internal/auth"
-	"imgproxy-api/internal/config"
+	"webplow/internal/auth"
+	"webplow/internal/config"
 )
 
 type errResponse struct {

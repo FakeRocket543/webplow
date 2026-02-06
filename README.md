@@ -1,4 +1,4 @@
-# WebP API
+# Webplow
 
 透過 imgproxy 將上傳圖片轉換為 WebP 格式的 API 服務，支援多用戶 token 管理。
 
@@ -20,17 +20,17 @@ make run
 
 ```bash
 # 新增 token
-./webp-token add "user1"
+./webplow-token add "user1"
 # Token created for "user1":
 # a1b2c3d4e5f6...
 
 # 列出所有 token
-./webp-token list
+./webplow-token list
 # NAME   KEY                                       CREATED
 # user1  a1b2c3d4e5f6...                           2026-02-06 02:28
 
 # 刪除 token
-./webp-token delete a1b2c3d4e5f6...
+./webplow-token delete a1b2c3d4e5f6...
 
 # 開發時也可用 make
 make token-add
@@ -78,7 +78,7 @@ curl http://127.0.0.1:9000/health
 cp .env.example .env
 docker compose up -d --build
 # 進入容器建立 token
-docker compose exec webp-api webp-token add "user1"
+docker compose exec webplow webplow-token add "user1"
 ```
 
 ### 主機部署（systemd）
@@ -86,14 +86,14 @@ docker compose exec webp-api webp-token add "user1"
 ```bash
 make deploy
 # 首次部署會提示建立 token
-sudo /opt/webp-api/webp-token add "user1"
-sudo systemctl restart webp-api
+sudo /opt/webplow/webplow-token add "user1"
+sudo systemctl restart webplow
 ```
 
 ### 搭配 Nginx（面對外部流量時建議）
 
 ```nginx
-upstream webp_api {
+upstream webplow {
     server 127.0.0.1:9000;
     keepalive 32;
 }
@@ -108,7 +108,7 @@ server {
     client_max_body_size 20m;
 
     location / {
-        proxy_pass http://webp_api;
+        proxy_pass http://webplow;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header X-Real-IP $remote_addr;
@@ -121,7 +121,7 @@ server {
 ## Make 指令
 
 ```bash
-make build          # 編譯 webp-api + webp-token
+make build          # 編譯 webplow + webplow-token
 make run            # 本地執行
 make token-add      # 新增 token（互動式）
 make token-list     # 列出所有 token
@@ -136,7 +136,7 @@ make clean          # 清理產出物
 ## 專案結構
 
 ```
-webp_api/
+webplow/
 ├── cmd/
 │   ├── server/main.go          # API 服務進入點
 │   └── token/main.go           # Token 管理 CLI
@@ -145,7 +145,7 @@ webp_api/
 │   ├── config/config.go        # 環境變數配置
 │   └── handler/handler.go      # HTTP handler
 ├── configs/config.yaml         # 配置參考文件
-├── deployments/webp-api.service # systemd 服務
+├── deployments/webplow.service # systemd 服務
 ├── scripts/deploy.sh           # 部署腳本
 ├── Dockerfile                  # 容器建置
 ├── docker-compose.yml          # 容器編排

@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"imgproxy-api/internal/auth"
-	"imgproxy-api/internal/config"
-	"imgproxy-api/internal/handler"
+	"webplow/internal/auth"
+	"webplow/internal/config"
+	"webplow/internal/handler"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 	}
 
 	go func() {
-		fmt.Printf("webp-api listening on %s\n", cfg.ListenAddr)
+		fmt.Printf("webplow listening on %s\n", cfg.ListenAddr)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}

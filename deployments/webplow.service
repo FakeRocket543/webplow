@@ -1,21 +1,21 @@
 [Unit]
-Description=WebP API Go Service
+Description=Webplow - WebP conversion API
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/opt/webp-api
-ExecStart=/opt/webp-api/webp-api
+WorkingDirectory=/opt/webplow
+ExecStart=/opt/webplow/webplow
 Restart=always
 RestartSec=5
-EnvironmentFile=/opt/webp-api/.env
+EnvironmentFile=/opt/webplow/.env
 
 # Security hardening
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/www/imgproxy/uploads /opt/webp-api
+ReadWritePaths=/var/www/imgproxy/uploads /opt/webplow
 PrivateTmp=true
 
 # Resource limits

@@ -2,8 +2,8 @@
 
 # 建置
 build:
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o webp-api ./cmd/server
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o webp-token ./cmd/token
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o webplow ./cmd/server
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o webplow-token ./cmd/token
 
 # 本地執行
 run:
@@ -41,4 +41,4 @@ docker-down:
 
 # 清理
 clean:
-	rm -f webp-api webp-token output.webp
+	rm -f webplow webplow-token output.webp
