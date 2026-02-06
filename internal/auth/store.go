@@ -36,6 +36,25 @@ func NewStore(path string) (*Store, error) {
 	return s, nil
 }
 
+func (s *Store) Reload() error {
+	data, err := os.ReadFile(s.path)
+	if err != nil {
+		return err
+	}
+	var list []*Token
+	if err := json.Unmarshal(data, &list); err != nil {
+		return fmt.Errorf("parse %s: %w", s.path, err)
+	}
+	tokens := make(map[string]*Token, len(list))
+	for _, t := range list {
+		tokens[t.Key] = t
+	}
+	s.mu.Lock()
+	s.tokens = tokens
+	s.mu.Unlock()
+	return nil
+}
+
 func (s *Store) Valid(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

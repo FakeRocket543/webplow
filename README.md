@@ -8,7 +8,7 @@ A WebP image conversion API service powered by imgproxy, with multi-user token m
 docker compose up -d --build
 
 # Create your first token
-docker exec webp_api-webplow-1 webplow-token add "user1"
+docker exec webplow-webplow-1 webplow-token add "user1"
 
 # Test
 curl -X POST https://webplow.example.com/ \
@@ -21,17 +21,19 @@ curl -X POST https://webplow.example.com/ \
 
 ```bash
 # Add
-docker exec webp_api-webplow-1 webplow-token add "site-name"
+docker exec webplow-webplow-1 webplow-token add "site-name"
 
 # List
-docker exec webp_api-webplow-1 webplow-token list
+docker exec webplow-webplow-1 webplow-token list
 
 # Delete
-docker exec webp_api-webplow-1 webplow-token delete <key>
+docker exec webplow-webplow-1 webplow-token delete <key>
 
-# Restart to reload tokens after add/delete
-docker compose restart webplow
+# Reload tokens (no restart, no downtime)
+docker kill -s HUP webplow-webplow-1
 ```
+
+Token changes require a reload via `SIGHUP`. This is a hot reload — existing connections are not interrupted.
 
 Use `make token-add` / `make token-list` / `make token-delete` for local development.
 
@@ -94,10 +96,10 @@ Query examples:
 
 ```bash
 # View log
-docker exec webp_api-webplow-1 cat /data/access.log
+docker exec webplow-webplow-1 cat /data/access.log
 
 # Per-user stats (requires jq on host)
-docker exec webp_api-webplow-1 cat /data/access.log | \
+docker exec webplow-webplow-1 cat /data/access.log | \
   jq -s 'group_by(.user) | map({user: .[0].user, count: length})'
 ```
 
@@ -121,8 +123,8 @@ External Server → Nginx (443/SSL) → webplow (Go, :9000) → imgproxy (libvip
 ```bash
 docker compose up -d --build
 # Token management
-docker exec webp_api-webplow-1 webplow-token add "site-name"
-docker compose restart webplow
+docker exec webplow-webplow-1 webplow-token add "site-name"
+docker kill -s HUP webplow-webplow-1
 ```
 
 ### With Nginx

@@ -7,6 +7,7 @@ Type=simple
 User=www-data
 WorkingDirectory=/opt/webplow
 ExecStart=/opt/webplow/webplow
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5
 EnvironmentFile=/opt/webplow/.env

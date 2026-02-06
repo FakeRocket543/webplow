@@ -46,6 +46,18 @@ func main() {
 		}
 	}()
 
+	sighup := make(chan os.Signal, 1)
+	signal.Notify(sighup, syscall.SIGHUP)
+	go func() {
+		for range sighup {
+			if err := store.Reload(); err != nil {
+				log.Printf("token reload failed: %v", err)
+			} else {
+				log.Println("tokens reloaded")
+			}
+		}
+	}()
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
