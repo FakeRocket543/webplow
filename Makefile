@@ -19,6 +19,10 @@ token-list:
 token-delete:
 	@read -p "Key: " key; go run ./cmd/token delete "$$key"
 
+# Reload tokens (Docker, no restart)
+reload:
+	docker kill -s HUP webplow-webplow-1
+
 # Test conversion
 test:
 	@echo "Usage: curl -X POST http://127.0.0.1:9000/ -H 'X-API-Key: <token>' -F 'file=@test.jpg' -o output.webp"

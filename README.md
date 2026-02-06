@@ -181,6 +181,7 @@ make run            # Run locally
 make token-add      # Add token (interactive)
 make token-list     # List all tokens
 make token-delete   # Delete token (interactive)
+make reload         # Reload tokens (Docker, no restart)
 make health         # Health check
 make deploy         # Host deploy (systemd)
 make docker-up      # Docker start
