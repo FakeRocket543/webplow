@@ -1,0 +1,23 @@
+# Binary
+webp-api
+webp-token
+
+# Environment & tokens
+.env
+tokens.json
+
+# Test output
+output.webp
+
+# Uploads
+uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

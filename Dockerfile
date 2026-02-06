@@ -1,0 +1,13 @@
+FROM golang:1.22-alpine AS builder
+WORKDIR /src
+COPY go.mod ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /webp-api ./cmd/server && \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /webp-token ./cmd/token
+
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /webp-api /webp-token /usr/local/bin/
+USER nobody
+ENTRYPOINT ["webp-api"]

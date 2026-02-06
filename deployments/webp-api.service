@@ -1,0 +1,26 @@
+[Unit]
+Description=WebP API Go Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/webp-api
+ExecStart=/opt/webp-api/webp-api
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/webp-api/.env
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/imgproxy/uploads /opt/webp-api
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE=65535
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

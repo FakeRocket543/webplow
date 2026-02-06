@@ -1,0 +1,29 @@
+services:
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    environment:
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /uploads
+      IMGPROXY_BIND: ":8080"
+    volumes:
+      - uploads:/uploads
+    restart: unless-stopped
+
+  webp-api:
+    build: .
+    env_file: .env
+    environment:
+      IMGPROXY_URL: http://imgproxy:8080
+      TEMP_DIR: /uploads
+      TOKEN_FILE: /data/tokens.json
+    ports:
+      - "9000:9000"
+    volumes:
+      - uploads:/uploads
+      - data:/data
+    depends_on:
+      - imgproxy
+    restart: unless-stopped
+
+volumes:
+  uploads:
+  data:
