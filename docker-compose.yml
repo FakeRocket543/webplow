@@ -2,21 +2,29 @@ services:
   imgproxy:
     image: darthsim/imgproxy:latest
     environment:
-      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /uploads
       IMGPROXY_BIND: ":8080"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /uploads
+      IMGPROXY_CONCURRENCY: 32
+      IMGPROXY_WORKERS: 8
+      IMGPROXY_MAX_SRC_RESOLUTION: 100
+      MALLOC_ARENA_MAX: 2
     volumes:
       - uploads:/uploads
     restart: unless-stopped
 
   webplow:
     build: .
-    env_file: .env
     environment:
-      IMGPROXY_URL: http://imgproxy:8080
+      LISTEN_ADDR: "0.0.0.0:9000"
+      IMGPROXY_URL: "http://imgproxy:8080"
       TEMP_DIR: /uploads
       TOKEN_FILE: /data/tokens.json
+      LOG_FILE: /data/access.log
+      MAX_FILE_SIZE: "20971520"
+      READ_TIMEOUT: 30s
+      WRITE_TIMEOUT: 60s
     ports:
-      - "9000:9000"
+      - "127.0.0.1:9000:9000"
     volumes:
       - uploads:/uploads
       - data:/data
