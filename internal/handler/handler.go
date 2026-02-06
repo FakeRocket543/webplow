@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,12 +23,21 @@ type Handler struct {
 	cfg    *config.Config
 	store  *auth.Store
 	client *http.Client
+	logger *log.Logger
 }
 
 func New(cfg *config.Config, store *auth.Store) *Handler {
+	var logger *log.Logger
+	if cfg.LogFile != "" {
+		f, err := os.OpenFile(cfg.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err == nil {
+			logger = log.New(f, "", 0)
+		}
+	}
 	return &Handler{
 		cfg:   cfg,
 		store: store,
+		logger: logger,
 		client: &http.Client{
 			Timeout: 60 * time.Second,
 			Transport: &http.Transport{
@@ -40,6 +50,21 @@ func New(cfg *config.Config, store *auth.Store) *Handler {
 	}
 }
 
+func (h *Handler) logRequest(user, filename string, inSize int64, status int, dur time.Duration) {
+	if h.logger == nil {
+		return
+	}
+	rec, _ := json.Marshal(map[string]interface{}{
+		"time":     time.Now().UTC().Format(time.RFC3339),
+		"user":     user,
+		"file":     filename,
+		"in_bytes": inSize,
+		"status":   status,
+		"ms":       dur.Milliseconds(),
+	})
+	h.logger.Println(string(rec))
+}
+
 func writeErr(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -47,12 +72,15 @@ func writeErr(w http.ResponseWriter, status int, msg string) {
 }
 
 func (h *Handler) Convert(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
 	if r.Method != http.MethodPost {
 		writeErr(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	if _, ok := h.store.Valid(r.Header.Get("X-API-Key")); !ok {
+	user, ok := h.store.Valid(r.Header.Get("X-API-Key"))
+	if !ok {
 		writeErr(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
@@ -80,7 +108,8 @@ func (h *Handler) Convert(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.Remove(tempFile)
 
-	if _, err := io.Copy(out, file); err != nil {
+	written, err := io.Copy(out, file)
+	if err != nil {
 		out.Close()
 		writeErr(w, http.StatusInternalServerError, "Failed to write file")
 		return
@@ -93,12 +122,14 @@ func (h *Handler) Convert(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.client.Get(h.cfg.ImgproxyURL + imgproxyPath)
 	if err != nil {
+		h.logRequest(user, header.Filename, written, 502, time.Since(start))
 		writeErr(w, http.StatusBadGateway, "Backend unreachable")
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		h.logRequest(user, header.Filename, written, 500, time.Since(start))
 		writeErr(w, http.StatusInternalServerError, "Conversion failed")
 		return
 	}
@@ -108,6 +139,8 @@ func (h *Handler) Convert(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Length", cl)
 	}
 	io.Copy(w, resp.Body)
+
+	h.logRequest(user, header.Filename, written, 200, time.Since(start))
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {

@@ -14,6 +14,7 @@ type Config struct {
 	MaxFileSize  int64
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
+	LogFile      string
 }
 
 func Load() *Config {
@@ -25,6 +26,7 @@ func Load() *Config {
 		MaxFileSize:  envInt64("MAX_FILE_SIZE", 20<<20),
 		ReadTimeout:  envDuration("READ_TIMEOUT", 30*time.Second),
 		WriteTimeout: envDuration("WRITE_TIMEOUT", 60*time.Second),
+		LogFile:      env("LOG_FILE", ""),
 	}
 }
 
