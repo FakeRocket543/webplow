@@ -66,6 +66,8 @@ curl -X POST https://webplow.example.com/ \
   -o output.webp
 ```
 
+Accepted formats: JPEG, PNG, WebP, GIF (validated by magic bytes, not file extension). Invalid files return `400 Bad Request`.
+
 ### Batch Conversion
 
 The API handles one image per request. For batch conversion, send parallel requests from the client:
