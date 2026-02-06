@@ -7,11 +7,14 @@ A WebP image conversion API service powered by imgproxy, with multi-user token m
 ```bash
 docker compose up -d --build
 
-# Create your first token
+# Create your first token (loaded on first start automatically)
 docker exec webplow-webplow-1 webplow-token add "user1"
 
+# Reload tokens (required if container is already running)
+docker kill -s HUP webplow-webplow-1
+
 # Test
-curl -X POST https://webplow.example.com/ \
+curl -X POST http://127.0.0.1:9000/ \
   -H "X-API-Key: YOUR_TOKEN" \
   -F "file=@image.jpg" \
   -o output.webp
@@ -167,7 +170,7 @@ make run
 ```bash
 make deploy
 sudo /opt/webplow/webplow-token add "user1"
-sudo systemctl restart webplow
+sudo systemctl reload webplow
 ```
 
 ## Make Targets
