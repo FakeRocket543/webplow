@@ -1,6 +1,7 @@
 services:
   imgproxy:
     image: darthsim/imgproxy:latest
+    cpu_shares: 256
     environment:
       IMGPROXY_BIND: ":8080"
       IMGPROXY_LOCAL_FILESYSTEM_ROOT: /uploads
@@ -14,6 +15,7 @@ services:
 
   webplow:
     build: .
+    cpu_shares: 256
     environment:
       LISTEN_ADDR: "0.0.0.0:9000"
       IMGPROXY_URL: "http://imgproxy:8080"
