@@ -61,6 +61,20 @@ curl -X POST https://webplow.lcn.tw/ \
   -o output.webp
 ```
 
+### 批量轉換
+
+API 為單張設計，批量轉換請在 client 端並行發送：
+
+```bash
+# 10 張圖並行轉換
+ls *.jpg | xargs -P 10 -I{} \
+  curl -s -X POST https://webplow.lcn.tw/ \
+    -H "X-API-Key: YOUR_TOKEN" \
+    -F "file=@{}" -o "{}.webp"
+```
+
+Server 端 imgproxy 支援 32 並行處理，不需要額外的批量 API。
+
 ### 健康檢查
 
 ```bash
