@@ -2,43 +2,38 @@
 
 透過 imgproxy 將上傳圖片轉換為 WebP 格式的 API 服務，支援多用戶 token 管理。
 
-## 快速開始
+## 快速開始（Docker Compose）
 
 ```bash
-# 1. 複製環境設定
-cp .env.example .env
+docker compose up -d --build
 
-# 2. 建立第一組 token
-make token-add
-# 或直接: go run ./cmd/token add "user1"
+# 建立第一組 token
+docker exec webp_api-webplow-1 webplow-token add "user1"
 
-# 3. 啟動
-make run
+# 測試
+curl -X POST https://webplow.lcn.tw/ \
+  -H "X-API-Key: YOUR_TOKEN" \
+  -F "file=@image.jpg" \
+  -o output.webp
 ```
 
 ## Token 管理
 
 ```bash
-# 新增 token
-./webplow-token add "user1"
-# Token created for "user1":
-# a1b2c3d4e5f6...
+# 新增
+docker exec webp_api-webplow-1 webplow-token add "site-name"
 
-# 列出所有 token
-./webplow-token list
-# NAME   KEY                                       CREATED
-# user1  a1b2c3d4e5f6...                           2026-02-06 02:28
+# 列出
+docker exec webp_api-webplow-1 webplow-token list
 
-# 刪除 token
-./webplow-token delete a1b2c3d4e5f6...
+# 刪除
+docker exec webp_api-webplow-1 webplow-token delete <key>
 
-# 開發時也可用 make
-make token-add
-make token-list
-make token-delete
+# 新增/刪除 token 後需重啟載入
+docker compose restart webplow
 ```
 
-Token 存放在 `tokens.json`（可透過 `TOKEN_FILE` 環境變數指定路徑）。
+本地開發時也可用 `make token-add` / `make token-list` / `make token-delete`。
 
 ## 環境變數
 
@@ -51,13 +46,16 @@ Token 存放在 `tokens.json`（可透過 `TOKEN_FILE` 環境變數指定路徑�
 | `MAX_FILE_SIZE` | `20971520` | 上傳大小上限（bytes） |
 | `READ_TIMEOUT` | `30s` | 讀取超時 |
 | `WRITE_TIMEOUT` | `60s` | 寫入超時 |
+| `LOG_FILE` | （空，不記錄） | 用量記錄檔路徑 |
 
-## API 使用
+Docker Compose 部署時環境變數已在 `docker-compose.yml` 中設定，不需要 `.env`。
+
+## API
 
 ### 圖片轉換
 
 ```bash
-curl -X POST http://127.0.0.1:9000/ \
+curl -X POST https://webplow.lcn.tw/ \
   -H "X-API-Key: YOUR_TOKEN" \
   -F "file=@image.jpg" \
   -o output.webp
@@ -66,31 +64,54 @@ curl -X POST http://127.0.0.1:9000/ \
 ### 健康檢查
 
 ```bash
-curl http://127.0.0.1:9000/health
+curl https://webplow.lcn.tw/health
 # {"status":"ok"}
 ```
 
+## 用量記錄
+
+設定 `LOG_FILE` 後，每筆請求會記錄：
+
+```json
+{"time":"2026-02-06T04:15:32Z","user":"felix","file":"test.png","in_bytes":70,"status":200,"ms":2}
+```
+
+查詢範例：
+
+```bash
+# 查看 log
+docker exec webp_api-webplow-1 cat /data/access.log
+
+# 各用戶統計（需要主機上有 jq）
+docker exec webp_api-webplow-1 cat /data/access.log | \
+  jq -s 'group_by(.user) | map({user: .[0].user, count: length})'
+```
+
+## 架構
+
+```
+外部 Server → Nginx (443/SSL) → webplow (Go, :9000) → imgproxy (libvips, :8080)
+                                      │                        │
+                                  data volume             uploads volume
+                                  tokens.json             暫存圖片
+                                  access.log
+```
+
+- Nginx：主機原生 systemd，TLS 終止 + 連線緩衝
+- webplow + imgproxy：Docker Compose，`docker compose up -d` 一鍵管理
+
 ## 部署方式
 
-### Docker Compose（推薦）
+### Docker Compose（生產環境）
 
 ```bash
-cp .env.example .env
 docker compose up -d --build
-# 進入容器建立 token
-docker compose exec webplow webplow-token add "user1"
+# Token 管理
+docker exec webp_api-webplow-1 webplow-token add "site-name"
+docker compose restart webplow
 ```
 
-### 主機部署（systemd）
-
-```bash
-make deploy
-# 首次部署會提示建立 token
-sudo /opt/webplow/webplow-token add "user1"
-sudo systemctl restart webplow
-```
-
-### 搭配 Nginx（面對外部流量時建議）
+### 搭配 Nginx
 
 ```nginx
 upstream webplow {
@@ -100,10 +121,10 @@ upstream webplow {
 
 server {
     listen 443 ssl http2;
-    server_name img.example.com;
+    server_name webplow.lcn.tw;
 
-    ssl_certificate     /etc/letsencrypt/live/img.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/img.example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/webplow.lcn.tw/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/webplow.lcn.tw/privkey.pem;
 
     client_max_body_size 20m;
 
@@ -112,11 +133,26 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 ```
 
-內網呼叫可省略 Nginx，直接連 Go 服務即可。
+### 本地開發
+
+```bash
+cp .env.example .env
+make token-add
+make run
+```
+
+### 主機部署（systemd，備選）
+
+```bash
+make deploy
+sudo /opt/webplow/webplow-token add "user1"
+sudo systemctl restart webplow
+```
 
 ## Make 指令
 
@@ -127,7 +163,7 @@ make token-add      # 新增 token（互動式）
 make token-list     # 列出所有 token
 make token-delete   # 刪除 token（互動式）
 make health         # 健康檢查
-make deploy         # 主機部署
+make deploy         # 主機部署（systemd）
 make docker-up      # Docker 啟動
 make docker-down    # Docker 停止
 make clean          # 清理產出物
@@ -145,10 +181,10 @@ webplow/
 │   ├── config/config.go        # 環境變數配置
 │   └── handler/handler.go      # HTTP handler
 ├── configs/config.yaml         # 配置參考文件
-├── deployments/webplow.service # systemd 服務
-├── scripts/deploy.sh           # 部署腳本
+├── deployments/webplow.service # systemd 服務（備選）
+├── scripts/deploy.sh           # 主機部署腳本
 ├── Dockerfile                  # 容器建置
-├── docker-compose.yml          # 容器編排
-├── .env.example                # 環境變數範本
+├── docker-compose.yml          # 容器編排（生產環境）
+├── .env.example                # 本地開發用環境變數
 └── Makefile
 ```
